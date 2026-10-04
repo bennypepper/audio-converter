@@ -1,8 +1,10 @@
 """Unit tests for the pure helpers (no FFmpeg needed).  Run:  python -m unittest discover tests"""
 import os
+import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 import audio_converter as ac  # noqa: E402
@@ -113,6 +115,79 @@ class CopyThrough(unittest.TestCase):
             with open(dst, 'rb') as fh:
                 self.assertEqual(fh.read(), b"opus-bytes")
             self.assertEqual(os.listdir(os.path.dirname(dst)), ['a.opus'])  # no .partial left behind
+
+
+FROZEN = dict(create=True)
+
+
+class FindFFmpeg(unittest.TestCase):
+    def setUp(self):
+        ac.find_ffmpeg.cache_clear()
+
+    def tearDown(self):
+        ac.find_ffmpeg.cache_clear()
+
+    def test_prefers_bundled_beside_frozen_exe_over_path(self):
+        with tempfile.TemporaryDirectory() as d:
+            bundled = touch(os.path.join(d, 'ffmpeg.exe'))
+            with mock.patch.object(sys, 'frozen', True, **FROZEN), \
+                 mock.patch.object(sys, 'executable', os.path.join(d, 'AudioConverter.exe')), \
+                 mock.patch('shutil.which', return_value='/usr/bin/ffmpeg'):
+                self.assertEqual(ac.find_ffmpeg(), os.path.abspath(bundled))
+
+    def test_falls_back_to_path(self):
+        with tempfile.TemporaryDirectory() as d:
+            on_path = touch(os.path.join(d, 'bin', 'ffmpeg'))
+            with mock.patch.object(sys, 'frozen', True, **FROZEN), \
+                 mock.patch.object(sys, 'executable', os.path.join(d, 'AudioConverter.exe')), \
+                 mock.patch('shutil.which', return_value=on_path):
+                self.assertEqual(ac.find_ffmpeg(), os.path.abspath(on_path))
+
+    def test_returns_none_when_missing(self):
+        with tempfile.TemporaryDirectory() as d:
+            with mock.patch.object(sys, 'frozen', True, **FROZEN), \
+                 mock.patch.object(sys, 'executable', os.path.join(d, 'AudioConverter.exe')), \
+                 mock.patch('shutil.which', return_value=None):
+                self.assertIsNone(ac.find_ffmpeg())
+
+
+class SubprocessKwargs(unittest.TestCase):
+    def test_windows_hides_console(self):
+        with mock.patch.object(sys, 'platform', 'win32'):
+            flag = getattr(subprocess, 'CREATE_NO_WINDOW', 0x08000000)
+            self.assertEqual(ac.get_subprocess_kwargs(), {'creationflags': flag})
+
+    def test_other_platforms_add_nothing(self):
+        with mock.patch.object(sys, 'platform', 'linux'):
+            self.assertEqual(ac.get_subprocess_kwargs(), {})
+
+
+class Fatal(unittest.TestCase):
+    def _run(self, frozen, tty, argv):
+        class FakeStdin:
+            def isatty(self_inner):
+                return tty
+        with mock.patch.object(sys, 'frozen', frozen, **FROZEN), \
+             mock.patch.object(sys, 'stdin', FakeStdin()), \
+             mock.patch.object(sys, 'argv', argv), \
+             mock.patch('builtins.input') as fake_input, \
+             mock.patch('builtins.print'):
+            with self.assertRaises(SystemExit) as cm:
+                ac.fatal("boom")
+        return cm.exception.code, fake_input.called
+
+    def test_pauses_for_drag_and_drop_launch_of_frozen_exe(self):
+        self.assertEqual(self._run(True, True, ['AudioConverter.exe', 'C:\\Music']), (1, True))
+
+    def test_pauses_for_plain_double_click(self):
+        self.assertEqual(self._run(True, True, ['AudioConverter.exe']), (1, True))
+
+    def test_never_pauses_when_flags_are_used(self):
+        self.assertEqual(self._run(True, True, ['AudioConverter.exe', '-i', 'x']), (1, False))
+
+    def test_never_pauses_from_source_or_pipes(self):
+        self.assertEqual(self._run(False, True, ['audio_converter.py']), (1, False))
+        self.assertEqual(self._run(True, False, ['AudioConverter.exe']), (1, False))
 
 
 if __name__ == '__main__':

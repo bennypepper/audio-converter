@@ -22,6 +22,7 @@ import subprocess
 import base64
 import shutil
 import threading
+import functools
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 __version__ = "1.1.0"
@@ -45,6 +46,27 @@ C_GREEN   = '\033[92m'
 C_YELLOW  = '\033[93m'
 C_WHITE   = '\033[97m'
 C_RED     = '\033[91m'
+
+
+def _launched_interactively():
+    """True for a double-click / drag-and-drop launch of the frozen exe (real console, no flags)."""
+    return (getattr(sys, 'frozen', False)
+            and bool(sys.stdin) and sys.stdin.isatty()
+            and not any(a.startswith('-') for a in sys.argv[1:]))
+
+
+def fatal(message, hint=None, code=1):
+    """Print an error and exit. A double-clicked exe waits for Enter so the message can be read."""
+    print(f"{C_RED}[ERROR] {message}{C_RESET}")
+    if hint:
+        print(hint)
+    if _launched_interactively():
+        try:
+            input(f"\n{C_DIM}Press Enter to exit...{C_RESET}")
+        except (EOFError, KeyboardInterrupt):
+            pass
+    sys.exit(code)
+
 
 # Verify dependencies and auto-install if missing
 try:
@@ -281,12 +303,43 @@ def print_banner(words=("AUDIO", "CONVERTER"),
     print()
 
 
+def _ffmpeg_search_dirs():
+    if getattr(sys, 'frozen', False):
+        dirs = [os.path.dirname(sys.executable)]
+        meipass = getattr(sys, '_MEIPASS', None)
+        if meipass:
+            dirs.append(meipass)
+        return dirs
+    return [os.path.dirname(os.path.abspath(__file__))]
+
+
+@functools.lru_cache(maxsize=1)
+def find_ffmpeg():
+    """Absolute path to ffmpeg: beside the app first (bundled copy wins), then PATH. None if not found."""
+    for base in _ffmpeg_search_dirs():
+        for name in ('ffmpeg.exe', 'ffmpeg'):
+            candidate = os.path.join(base, name)
+            if os.path.isfile(candidate):
+                return os.path.abspath(candidate)
+    on_path = shutil.which('ffmpeg')
+    return os.path.abspath(on_path) if on_path else None
+
+
+def get_subprocess_kwargs():
+    """Extra subprocess.run kwargs: keep Windows from flashing a console window per ffmpeg call."""
+    if sys.platform == 'win32':
+        return {'creationflags': getattr(subprocess, 'CREATE_NO_WINDOW', 0x08000000)}
+    return {}
+
+
 def check_ffmpeg():
-    """Verify that FFmpeg is available on PATH."""
-    if shutil.which('ffmpeg') is None:
-        print(f"{C_RED}[ERROR] 'ffmpeg' is not found in your system PATH.{C_RESET}")
-        print("Please ensure FFmpeg is installed and added to PATH.")
-        sys.exit(1)
+    """Exit with a readable message when FFmpeg is missing; otherwise return its path."""
+    path = find_ffmpeg()
+    if not path:
+        fatal("'ffmpeg' was not found next to this program or on your PATH.",
+              "Put ffmpeg.exe in the same folder as this program (extract the whole zip first),\n"
+              "or install FFmpeg and add it to PATH.")
+    return path
 
 
 def clean_path(path_str):
@@ -463,7 +516,8 @@ def convert_single_file(src_path, dst_path, codec, bitrate=None, skip_existing=F
 
         # 2. Build FFmpeg command
         cfg = CODEC_CONFIG[codec]
-        cmd = ['ffmpeg', '-y', '-nostdin', '-i', src_path, '-map', '0:a']
+        ffmpeg_bin = find_ffmpeg() or 'ffmpeg'
+        cmd = [ffmpeg_bin, '-y', '-nostdin', '-i', src_path, '-map', '0:a']
         cmd.extend(cfg['ffmpeg_args'])
         if not cfg['is_lossless'] and bitrate:
             if bitrate.lower() == 'v0' and codec == 'mp3':
@@ -473,7 +527,8 @@ def convert_single_file(src_path, dst_path, codec, bitrate=None, skip_existing=F
         cmd.extend(['-map_metadata', '0', '-map_metadata:g', '0:s:a:0', tmp_path])
 
         # 3. Execute FFmpeg
-        res = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='replace')
+        res = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='replace',
+                             **get_subprocess_kwargs())
         if res.returncode != 0:
             return False, f"FFmpeg error: {res.stderr[-200:].strip()}"
 
