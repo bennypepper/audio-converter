@@ -21,14 +21,14 @@ A multi-threaded batch audio converter with a step-by-step terminal wizard. It r
 
 ## Download (Windows, no installation)
 
-1. Open the [latest release](https://github.com/bennypepper/audio-converter/releases/latest) and download `AudioConverter-vX.Y.Z-win64.zip`.
+1. Open the [latest release](https://github.com/bennypepper/audio-converter/releases/latest) and download `AudioConverter-v1.1.0-win64.zip`.
 2. **Extract the whole zip** (right-click → *Extract All*). Do not run it from inside the zip.
 3. Double-click `AudioConverter.exe`, or drag an audio file or folder onto it.
 
 No Python or FFmpeg needed. Keep `AudioConverter.exe`, `ffmpeg.exe` and the `_internal` folder together.
 The app is unsigned, so Windows SmartScreen may warn: click **More info → Run anyway**.
 Optional: compare the zip's SHA-256 with the `.sha256` file on the release page
-(`Get-FileHash .\AudioConverter-vX.Y.Z-win64.zip`).
+(`Get-FileHash .\AudioConverter-v1.1.0-win64.zip`).
 
 ## About
 
