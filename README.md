@@ -21,7 +21,7 @@ A multi-threaded batch audio converter with a step-by-step terminal wizard. It r
 
 ## Download (Windows, no installation)
 
-1. Open the [latest release](https://github.com/<your-username>/<repo-name>/releases/latest) and download `AudioConverter-vX.Y.Z-win64.zip`.
+1. Open the [latest release](https://github.com/bennypepper/audio-converter/releases/latest) and download `AudioConverter-vX.Y.Z-win64.zip`.
 2. **Extract the whole zip** (right-click → *Extract All*). Do not run it from inside the zip.
 3. Double-click `AudioConverter.exe`, or drag an audio file or folder onto it.
 
@@ -71,10 +71,11 @@ Debian / Ubuntu: sudo apt install ffmpeg
 ## Run from source (Python, macOS, Linux)
 
 ```bash
-git clone https://github.com/<your-username>/<repo-name>.git
-cd <repo-name>
+git clone https://github.com/bennypepper/audio-converter.git
+cd audio-converter
 pip install -r requirements.txt   # optional - mutagen is also auto-installed
 ```
+
 
 ### Windows
 - **Drag & drop** a file or folder onto **`convert.bat`** to open the wizard with that source already filled in.
