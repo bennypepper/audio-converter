@@ -1,4 +1,4 @@
-# 🎵 Audio Converter & Metadata Engine
+# Audio Converter & Metadata Engine
 
 ```text
                       █████╗ ██╗   ██╗██████╗ ██╗ ██████╗
@@ -17,9 +17,20 @@
 
 <!-- Replace the block above with a screenshot once you have one:  ![Screenshot](docs/screenshot.png) -->
 
-A multi-threaded batch audio converter with a colourful step-by-step terminal wizard. It re-encodes whole music libraries between Opus, AAC, MP3, FLAC, ALAC, Ogg Vorbis and WAV while **keeping every metadata tag and the embedded album art**.
+A multi-threaded batch audio converter with a step-by-step terminal wizard. It re-encodes whole music libraries between Opus, AAC, MP3, FLAC, ALAC, Ogg Vorbis and WAV while **keeping every metadata tag and embedded album art**.
 
-## ✨ Features
+## About
+
+Audio Converter is a command-line utility and interactive tool for converting music files across modern audio codecs while strictly preserving audio metadata, tags, and embedded album art.
+
+It is designed to solve common issues encountered in bulk audio processing:
+- **Metadata and Artwork Retention**: Many encoders strip secondary tags, replaygain values, lyrics, or album covers. Audio Converter synchronizes both global and stream-level metadata and re-embeds source artwork directly into each format's native structure (Vorbis comments for Opus/FLAC/Ogg, ID3 APIC frames for MP3, and `covr` atoms for AAC/ALAC).
+- **Protection Against Audio Degradation**: Converting lossy audio (e.g., MP3 or AAC) to lossless formats (FLAC, ALAC, WAV) increases file size up to 10× without restoring lost acoustic information. Built-in guardrails alert the user and offer to skip lossy inputs.
+- **Copy vs. Re-encode Optimization**: When an input file already matches the selected target format and codec, the tool copies it untouched rather than degrading audio quality through unnecessary re-compression.
+- **Interactive and Scriptable Interfaces**: Offers an interactive terminal wizard with navigation history (type `b` to go back, `q` to quit), drag-and-drop launcher scripts (`.bat` / `.sh`), and a full command-line flag interface for batch scripting.
+- **Atomic Writes and Resilience**: Audio files are encoded to temporary `.partial` files before being atomically renamed, preventing half-written or corrupted files if a process is interrupted.
+
+## Features
 
 - **Interactive wizard** with a progress breadcrumb, remembered choices and a **back** key on every screen
 - **Drag & drop** a file or folder onto the launcher, or use flags for scripting
@@ -30,7 +41,7 @@ A multi-threaded batch audio converter with a colourful step-by-step terminal wi
 - **Dry run** mode to preview exactly what would happen
 - Tags (title, artist, album, year, track, lyrics, …) and cover art preserved across all formats
 
-## 📋 Requirements
+## Requirements
 
 | Requirement | Notes |
 | :--- | :--- |
@@ -46,7 +57,7 @@ macOS:           brew install ffmpeg
 Debian / Ubuntu: sudo apt install ffmpeg
 ```
 
-## 🚀 Installation
+## Installation
 
 ```bash
 git clone https://github.com/bennypepper/audio-converter.git
@@ -54,7 +65,7 @@ cd audio-converter
 pip install -r requirements.txt   # optional - mutagen is also auto-installed
 ```
 
-## ⚡ Quick Start
+## Quick Start
 
 ### Windows
 - **Drag & drop** a file or folder onto **`convert.bat`** to open the wizard with that source already filled in.
@@ -79,13 +90,13 @@ pip install -r requirements.txt   # optional - mutagen is also auto-installed
 
 The wizard steps are **Source → Codec → Quality → Output → Confirm**. Steps that don't apply (for example *Quality* for lossless targets) are skipped automatically.
 
-## 🧠 Smart Guardrails
+## Smart Guardrails
 
 1. **Lossy → lossless guard**: converting MP3/AAC/Opus/Ogg/WMA to FLAC, ALAC or WAV inflates file size 5-10× without restoring any lost detail. The wizard offers to skip lossy files (recommended). In CLI mode they are skipped unless you pass `--include-lossy`.
 2. **Same-format files are copied, not re-encoded**: an `.opus` file being "converted" to Opus is copied as-is, because encoding lossy audio a second time only degrades it. AAC vs ALAC inside `.m4a` is detected correctly. Use `--force-reencode` (or the wizard's *Re-encode anyway* option) to override, for example to lower a bitrate.
 3. **Skip existing**: resume an interrupted batch without redoing finished files. Incomplete files never count as finished.
 
-## 🎛️ Codecs & Bitrate Tiers
+## Codecs & Bitrate Tiers
 
 | Codec | Extension | Type | Presets |
 | :--- | :--- | :--- | :--- |
@@ -97,7 +108,7 @@ The wizard steps are **Source → Codec → Quality → Output → Confirm**. St
 | **Ogg Vorbis** | `.ogg` | Lossy | `128k`, `160k`, `192k`, `256k`, or custom |
 | **WAV** | `.wav` | Lossless | Uncompressed 16-bit PCM |
 
-## 🖥️ Command Line Usage
+## Command Line Usage
 
 ```bash
 python audio_converter.py                          # interactive wizard
@@ -128,7 +139,7 @@ python audio_converter.py -i ~/Music/Albums -f mp3 -b v0 --skip-existing
 python audio_converter.py -i ~/Music/Albums -f flac --dry-run
 ```
 
-## 🎯 FLAC → Opus Preset
+## FLAC → Opus Preset
 
 `flac_to_opus.py` is a focused front-end (with its own **FLAC ▸ OPUS** banner) built on the same engine.
 
@@ -140,14 +151,14 @@ python flac_to_opus.py ~/Music/HiRes ~/Music/Portable -b 160k
 
 Options: `-b/--bitrate`, `-w/--workers`, `--overwrite` (re-encode existing outputs), `--dry-run`, `--version`.
 
-## 🎨 Metadata & Album Art
+## Metadata & Album Art
 
 1. **FFmpeg pass** keeps all text tags via `-map_metadata 0`.
 2. **Mutagen** extracts the source cover and re-embeds it in each format's native way: `METADATA_BLOCK_PICTURE` for Opus/Ogg, `APIC` for MP3, the `covr` atom for M4A, and a picture block for FLAC.
 
 If a cover can't be embedded, the file is still converted and the summary tells you how many were affected. WAV has no standard cover-art support.
 
-## 📁 Project Structure
+## Project Structure
 
 ```text
 .
@@ -161,19 +172,19 @@ If a cover can't be embedded, the file is still converted and the summary tells 
 └── README.md
 ```
 
-## 🧪 Tests
+## Tests
 
 ```bash
 python -m unittest discover tests
 ```
 
-## 🩹 Troubleshooting
+## Troubleshooting
 
 - **`'ffmpeg' is not found`**: install FFmpeg (see Requirements) and reopen your terminal so `PATH` refreshes.
 - **Strange characters or no colours on Windows**: use Windows Terminal or a recent PowerShell/CMD (Windows 10+).
 - **Nothing happened for some files**: they were probably skipped (already exist, lossy → lossless guard, or already in the target format). The batch summary lists the counts.
 - **Leftover `*.partial.*` files**: an interrupted run's temporary files; they are safe to delete and are overwritten on the next run.
 
-## 📜 License
+## License
 
 [MIT](LICENSE)
