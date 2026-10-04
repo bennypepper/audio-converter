@@ -1,0 +1,24 @@
+Third-Party Notices and Licenses
+================================
+
+This software distribution includes the following third-party components:
+
+1. Python Runtime
+   License: Python Software Foundation License Version 2
+   Website: https://www.python.org/psf/license/
+
+2. Mutagen
+   License: GNU General Public License v2 or later (GPL-2.0-or-later)
+   Website: https://github.com/quodlibet/mutagen
+   Source code and license text: See LICENSES/Mutagen-COPYING.txt
+
+3. PyInstaller Bootloader
+   License: GNU General Public License v2 or later with Bootloader Exception
+   Website: https://pyinstaller.org
+
+4. FFmpeg
+   License: GNU General Public License (GPL) or GNU Lesser General Public License (LGPL)
+   Website: https://ffmpeg.org
+   Source code link and release metadata: See LICENSES/FFmpeg-SOURCE.txt
+   License text: See LICENSES/FFmpeg-LICENSE.txt
+   FFmpeg is an independent program executed as an external subprocess.
