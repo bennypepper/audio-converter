@@ -184,7 +184,6 @@ If a cover can't be embedded, the file is still converted and the summary tells 
 ├── flac_to_opus_192k.bat / flac_to_opus_192k.sh
 ├── packaging/                # Build scripts, spec, and license assets
 ├── tests/                    # Unit, build, and smoke tests
-├── docs/                     # Release process and documentation
 ├── .github/workflows/        # CI / CD release pipeline
 ├── requirements.txt
 ├── requirements-build.txt
@@ -201,7 +200,7 @@ python -m unittest discover tests
 ## Building the Windows Release
 
 To build the standalone portable Windows zip locally:
-1. Ensure `packaging/ffmpeg.lock.json` is filled in (see [docs/RELEASING.md](docs/RELEASING.md)).
+1. Ensure `packaging/ffmpeg.lock.json` is configured with a valid FFmpeg archive URL and SHA-256 hash.
 2. Run `packaging\build.bat` from a Windows CMD or PowerShell prompt.
    The resulting distribution zip and checksum are generated in `dist/`.
 

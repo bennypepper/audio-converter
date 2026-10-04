@@ -41,3 +41,5 @@ packaging/bin/
 .tools/
 *.spec.bak
 
+# Internal documentation
+docs/
