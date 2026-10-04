@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# Half-written output from an interrupted run
+*.partial.*
+
+# Default output and test audio folders
+converted/
+converted_*/
+*.opus
+*.mp3
+*.m4a
+*.flac
+*.ogg
+*.wav
+*.alac
+*.aac
+
+# Secrets & Environment
+.env
+.env.*
+*.key
+*.pem
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
