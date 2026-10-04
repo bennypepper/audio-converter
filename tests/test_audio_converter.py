@@ -190,5 +190,38 @@ class Fatal(unittest.TestCase):
         self.assertEqual(self._run(True, False, ['AudioConverter.exe']), (1, False))
 
 
+class SplitPreset(unittest.TestCase):
+    def test_no_preset_leaves_args_alone(self):
+        self.assertEqual(ac.split_preset(['-i', 'x']), (None, ['-i', 'x']))
+
+    def test_space_form(self):
+        self.assertEqual(ac.split_preset(['--preset', 'flac_to_opus', 'src', '--dry-run']),
+                         ('flac_to_opus', ['src', '--dry-run']))
+
+    def test_equals_form_anywhere(self):
+        self.assertEqual(ac.split_preset(['src', '--preset=flac_to_opus']), ('flac_to_opus', ['src']))
+
+    def test_dangling_flag_is_left_for_argparse_to_reject(self):
+        self.assertEqual(ac.split_preset(['--preset']), (None, ['--preset']))
+
+
+class ParserAndPreset(unittest.TestCase):
+    def test_parser_lists_preset(self):
+        args = ac.build_argument_parser().parse_args(['--preset', 'flac_to_opus'])
+        self.assertEqual(args.preset, 'flac_to_opus')
+
+    def test_unknown_preset_is_rejected_with_exit_2(self):
+        import contextlib
+        import io
+        with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as cm:
+            ac.main(['--preset', 'nope'])
+        self.assertEqual(cm.exception.code, 2)
+
+    def test_preset_names_match_parser_choices(self):
+        parser = ac.build_argument_parser()
+        choices = next(a.choices for a in parser._actions if a.dest == 'preset')
+        self.assertEqual(sorted(choices), sorted(ac.PRESET_NAMES))
+
+
 if __name__ == '__main__':
     unittest.main()

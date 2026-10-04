@@ -25,6 +25,10 @@ import threading
 import functools
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+if __name__ == '__main__':
+    # Let `import audio_converter` (done by preset modules) reuse THIS module instead of loading a second copy.
+    sys.modules.setdefault('audio_converter', sys.modules[__name__])
+
 __version__ = "1.1.0"
 
 # Enable ANSI colors & UTF-8 output on Windows
@@ -78,6 +82,9 @@ try:
     from mutagen.oggopus import OggOpus
     from mutagen.oggvorbis import OggVorbis
 except ImportError:
+    if getattr(sys, 'frozen', False):
+        fatal("Required component 'mutagen' is missing from this build.",
+              "Please re-download and fully extract the application.")
     print(f"{C_YELLOW}[INFO] 'mutagen' is not found. Installing via pip...{C_RESET}")
     try:
         subprocess.check_call([sys.executable, "-m", "pip", "install", "mutagen"])
@@ -90,10 +97,8 @@ except ImportError:
         from mutagen.oggvorbis import OggVorbis
         print(f"{C_GREEN}[INFO] 'mutagen' successfully installed!{C_RESET}\n")
     except Exception as e:
-        print(f"{C_RED}[ERROR] Failed to auto-install 'mutagen': {e}{C_RESET}")
-        print(f"Please run: {sys.executable} -m pip install mutagen")
-        input("Press Enter to exit...")
-        sys.exit(1)
+        fatal(f"Failed to auto-install 'mutagen': {e}",
+              f"Please run: {sys.executable} -m pip install mutagen")
 
 SUPPORTED_INPUT_EXTS = {
     '.flac', '.mp3', '.m4a', '.aac', '.ogg', '.opus',
@@ -1135,9 +1140,27 @@ def run_batch(file_list, dst_dir, codec, bitrate, skip_existing, force_reencode,
     return stats['failed'] == 0 and not interrupted
 
 
-def main():
+PRESET_NAMES = ('flac_to_opus',)
+
+
+def split_preset(argv):
+    """Pulls `--preset NAME` / `--preset=NAME` out of argv. Returns (name_or_None, remaining_args)."""
+    name, rest, i = None, [], 0
+    while i < len(argv):
+        arg = argv[i]
+        if arg == '--preset' and i + 1 < len(argv):
+            name, i = argv[i + 1], i + 2
+        elif arg.startswith('--preset='):
+            name, i = arg.split('=', 1)[1], i + 1
+        else:
+            rest.append(arg)
+            i += 1
+    return name, rest
+
+
+def build_argument_parser():
     parser = argparse.ArgumentParser(
-        prog="audio_converter.py",
+        prog="AudioConverter" if getattr(sys, 'frozen', False) else "audio_converter.py",
         description="Audio converter with full metadata & cover art preservation. "
                     "Run with no arguments (or just a path) for the interactive wizard."
     )
@@ -1157,11 +1180,25 @@ def main():
                         help="Re-encode files that are already in the target format instead of copying them")
     parser.add_argument('--include-lossy', action='store_true',
                         help="Allow lossy sources when the target is lossless (skipped by default)")
+    parser.add_argument('--preset', choices=PRESET_NAMES, default=None,
+                        help="Run a pre-configured workflow, e.g. --preset flac_to_opus SOURCE [DEST] "
+                             "(takes its own options; see --preset flac_to_opus --help)")
     parser.add_argument('--dry-run', action='store_true',
                         help="Show what would be encoded/copied/skipped without writing anything")
     parser.add_argument('--version', action='version', version=f"%(prog)s {__version__}")
+    return parser
 
-    args = parser.parse_args()
+
+def main(argv=None):
+    argv = list(sys.argv[1:] if argv is None else argv)
+    parser = build_argument_parser()
+    preset, rest = split_preset(argv)
+    if preset is not None:
+        if preset not in PRESET_NAMES:
+            parser.error(f"unknown preset '{preset}' (choose from: {', '.join(PRESET_NAMES)})")
+        import flac_to_opus  # imported lazily; the alias at the top of this file prevents a double load
+        return flac_to_opus.main(rest, prog=f"{parser.prog} --preset {preset}")
+    args = parser.parse_args(argv)
     if args.workers is not None and args.workers < 1:
         parser.error("--workers must be at least 1")
     check_ffmpeg()
@@ -1223,5 +1260,20 @@ def main():
         sys.exit(0 if ok else 1)
 
 
+def cli_entry():
+    """Console entry point. A crash shows its traceback (and waits, for double-click launches)."""
+    try:
+        main()
+    except KeyboardInterrupt:
+        print(f"\n{C_YELLOW}[!] Cancelled.{C_RESET}")
+        sys.exit(130)
+    except SystemExit:
+        raise
+    except Exception:
+        import traceback
+        traceback.print_exc()
+        fatal("Unexpected error. Please report it with the details above.")
+
+
 if __name__ == '__main__':
-    main()
+    cli_entry()

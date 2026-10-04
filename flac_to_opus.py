@@ -75,9 +75,9 @@ def interactive_mode():
     return st['input_path'], st['dst'], st['bitrate'], st['skip_existing'], st['all_files']
 
 
-def main():
+def main(argv=None, prog="flac_to_opus.py"):
     parser = argparse.ArgumentParser(
-        prog="flac_to_opus.py",
+        prog=prog,
         description="Convert FLAC to Opus (default 192k), preserving tags and cover art. "
                     "Run with no arguments for the interactive wizard."
     )
@@ -92,7 +92,7 @@ def main():
                         help="Show what would be converted without writing anything")
     parser.add_argument('--version', action='version', version=f"%(prog)s {ac.__version__}")
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     if args.workers is not None and args.workers < 1:
         parser.error("--workers must be at least 1")
     ac.check_ffmpeg()
