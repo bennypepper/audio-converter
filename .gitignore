@@ -32,3 +32,12 @@ converted_*/
 .DS_Store
 Thumbs.db
 
+# Build output & local tooling
+build/
+dist/
+packaging/bin/
+.venv/
+.venv-build/
+.tools/
+*.spec.bak
+
