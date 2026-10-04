@@ -19,6 +19,17 @@
 
 A multi-threaded batch audio converter with a step-by-step terminal wizard. It re-encodes whole music libraries between Opus, AAC, MP3, FLAC, ALAC, Ogg Vorbis and WAV while **keeping every metadata tag and embedded album art**.
 
+## Download (Windows, no installation)
+
+1. Open the [latest release](https://github.com/<your-username>/<repo-name>/releases/latest) and download `AudioConverter-vX.Y.Z-win64.zip`.
+2. **Extract the whole zip** (right-click → *Extract All*). Do not run it from inside the zip.
+3. Double-click `AudioConverter.exe`, or drag an audio file or folder onto it.
+
+No Python or FFmpeg needed. Keep `AudioConverter.exe`, `ffmpeg.exe` and the `_internal` folder together.
+The app is unsigned, so Windows SmartScreen may warn: click **More info → Run anyway**.
+Optional: compare the zip's SHA-256 with the `.sha256` file on the release page
+(`Get-FileHash .\AudioConverter-vX.Y.Z-win64.zip`).
+
 ## About
 
 Audio Converter is a command-line utility and interactive tool for converting music files across modern audio codecs while strictly preserving audio metadata, tags, and embedded album art.
@@ -45,7 +56,7 @@ It is designed to solve common issues encountered in bulk audio processing:
 
 | Requirement | Notes |
 | :--- | :--- |
-| **Python 3.8+** | Windows, macOS and Linux |
+| **Python 3.9+** | Windows, macOS and Linux |
 | **FFmpeg** on your `PATH` | Standard builds include the Opus, MP3 and Vorbis encoders |
 | **mutagen** | Installed automatically on first run (or `pip install -r requirements.txt`) |
 
@@ -57,15 +68,13 @@ macOS:           brew install ffmpeg
 Debian / Ubuntu: sudo apt install ffmpeg
 ```
 
-## Installation
+## Run from source (Python, macOS, Linux)
 
 ```bash
-git clone https://github.com/bennypepper/audio-converter.git
-cd audio-converter
+git clone https://github.com/<your-username>/<repo-name>.git
+cd <repo-name>
 pip install -r requirements.txt   # optional - mutagen is also auto-installed
 ```
-
-## Quick Start
 
 ### Windows
 - **Drag & drop** a file or folder onto **`convert.bat`** to open the wizard with that source already filled in.
@@ -143,6 +152,12 @@ python audio_converter.py -i ~/Music/Albums -f flac --dry-run
 
 `flac_to_opus.py` is a focused front-end (with its own **FLAC ▸ OPUS** banner) built on the same engine.
 
+Standalone Windows executable:
+```cmd
+AudioConverter.exe --preset flac_to_opus SOURCE [DEST]
+```
+
+From source:
 ```bash
 python flac_to_opus.py                        # wizard
 python flac_to_opus.py ~/Music/HiRes          # one-shot, 192k -> ~/Music/HiRes_opus
@@ -164,10 +179,14 @@ If a cover can't be embedded, the file is still converted and the summary tells 
 .
 ├── audio_converter.py        # Main converter: wizard, CLI and batch engine
 ├── flac_to_opus.py           # FLAC -> Opus preset with its own banner
-├── convert.bat / convert.sh                  # Launchers (Windows / macOS+Linux)
+├── convert.bat / convert.sh  # Launchers (Windows / macOS+Linux)
 ├── flac_to_opus_192k.bat / flac_to_opus_192k.sh
-├── tests/test_audio_converter.py
+├── packaging/                # Build scripts, spec, and license assets
+├── tests/                    # Unit, build, and smoke tests
+├── docs/                     # Release process and documentation
+├── .github/workflows/        # CI / CD release pipeline
 ├── requirements.txt
+├── requirements-build.txt
 ├── LICENSE
 └── README.md
 ```
@@ -178,8 +197,16 @@ If a cover can't be embedded, the file is still converted and the summary tells 
 python -m unittest discover tests
 ```
 
+## Building the Windows Release
+
+To build the standalone portable Windows zip locally:
+1. Ensure `packaging/ffmpeg.lock.json` is filled in (see [docs/RELEASING.md](docs/RELEASING.md)).
+2. Run `packaging\build.bat` from a Windows CMD or PowerShell prompt.
+   The resulting distribution zip and checksum are generated in `dist/`.
+
 ## Troubleshooting
 
+- **Windows SmartScreen warning ("Windows protected your PC")**: The application is unsigned. Click **More info** and then **Run anyway**.
 - **`'ffmpeg' is not found`**: install FFmpeg (see Requirements) and reopen your terminal so `PATH` refreshes.
 - **Strange characters or no colours on Windows**: use Windows Terminal or a recent PowerShell/CMD (Windows 10+).
 - **Nothing happened for some files**: they were probably skipped (already exist, lossy → lossless guard, or already in the target format). The batch summary lists the counts.
@@ -187,4 +214,6 @@ python -m unittest discover tests
 
 ## License
 
-[MIT](LICENSE)
+Distributed under the [GNU General Public License v2 or later (GPL-2.0-or-later)](LICENSE).
+
+Audio Converter links and bundles `mutagen` (licensed under GPL-2.0-or-later), making the distributed standalone binary a GPL combined work. FFmpeg is a separate program executed as a subprocess; its license notice and source code links are provided in `LICENSES/`.
