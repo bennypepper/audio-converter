@@ -61,5 +61,37 @@ class Hashing(unittest.TestCase):
             os.remove(fh.name)
 
 
+bt = load('build')
+
+
+class BuildHelpers(unittest.TestCase):
+    def test_tag_must_match_version(self):
+        bt.check_tag('v1.1.0', '1.1.0')
+        bt.check_tag(None, '1.1.0')
+        with self.assertRaises(SystemExit):
+            bt.check_tag('v9.9.9', '1.1.0')
+
+    def test_zip_has_single_top_folder_and_forward_slashes(self):
+        import zipfile
+        with tempfile.TemporaryDirectory() as d:
+            app = os.path.join(d, 'AudioConverter')
+            os.makedirs(os.path.join(app, '_internal'))
+            for rel in ('AudioConverter.exe', os.path.join('_internal', 'x.dll')):
+                open(os.path.join(app, rel), 'wb').close()
+            z = os.path.join(d, 'out.zip')
+            bt.make_zip(app, z)
+            names = zipfile.ZipFile(z).namelist()
+            self.assertTrue(all(n.startswith('AudioConverter/') for n in names), names)
+            self.assertTrue(all('\\' not in n for n in names), names)
+            self.assertIn('AudioConverter/_internal/x.dll', names)
+
+    def test_version_is_readable(self):
+        self.assertRegex(bt.read_version(), r'^\d+\.\d+\.\d+')
+
+    def test_mutagen_license_is_found(self):
+        self.assertTrue(os.path.isfile(bt.find_dist_license('mutagen')))
+
+
 if __name__ == '__main__':
     unittest.main()
+
